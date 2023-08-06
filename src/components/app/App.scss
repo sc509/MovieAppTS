@@ -1,0 +1,39 @@
+.movieapp{
+  margin-left: 215px;
+  margin-right: 215px;
+  font-family: 'Inter', sans-serif;
+  @media (max-width: 420px){
+    max-width: 420px;
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+.error-message {
+  font-size: 25px;
+  color: red;
+  border: 1px solid black;
+  padding: 10px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100px;
+}
+.no-results-message{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid red;
+  height: 50px;
+}
+.header{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 13px;
+}
