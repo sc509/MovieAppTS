@@ -16,7 +16,6 @@ export default class Paginations extends Component<Props, State> {
     const maxPages = 500;
     const pageSize = 20;
     const limitedTotalResults = Math.min(totalResult, maxPages * pageSize - 1);
-    console.log(totalResult)
     return (
       <div className="footer-pagination">
         <Pagination

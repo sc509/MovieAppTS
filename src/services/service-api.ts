@@ -98,8 +98,15 @@ export default class MdbapiService {
   public async getRatedMovies(guestSessionId: string) {
     const url = `https://api.themoviedb.org/3/guest_session/${guestSessionId}/rated_movies?api_key=6d2b0c95d8f848f05aebfbf9b5486775`;
 
+    const optionsWithoutAuth = {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+      },
+    };
+
     try {
-      const response = await fetch(url, this.options);
+      const response = await fetch(url, optionsWithoutAuth);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

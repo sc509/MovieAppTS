@@ -7,6 +7,7 @@ import { Rate } from 'antd';
 
 interface MovieListItemProps {
   movie:Movie;
+  onRate: (movieId: number, rating: number) => void;
 }
 
 interface State {}
@@ -15,6 +16,10 @@ export default class MovieListItem extends Component<MovieListItemProps, State> 
   handleImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
     const target = event.target as HTMLImageElement;
     target.src = 'https://skomarket.ru/upload/iblock/349/fzk93483k2g5hmxa3mho61h94vlpxklq.jpg';
+  };
+
+  handleRate = (rating: number) => {
+    this.props.onRate(this.props.movie.id, rating);
   };
 
   render() {
@@ -42,7 +47,7 @@ export default class MovieListItem extends Component<MovieListItemProps, State> 
           </div>
           <p className="movie-list__item-description">{truncateString(movie.overview, 170)}</p>
           <div className="movie-list__item-user-rate">
-            <Rate className="rateStyle" value={0} count={10} />
+            <Rate className="rateStyle" value={movie.rating} count={10} onChange={this.handleRate} />
           </div>
         </div>
       </div>
