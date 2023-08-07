@@ -2,10 +2,13 @@ import "./App.scss";
 import { Component } from "react";
 import MovieSearch from "../movie-search/movie-search";
 import Tabs from "../tabs/tabs";
-import Pagination from "../pagination/pagination";
-import { getMovies } from "../../services/service-api";
+import Paginations from "../pagination/pagination";
+import MdbapiService from "../../services/service-api";
 import MovieList from "../movie-list/movie-list";
 import { Spin } from "antd";
+import { debounce } from "lodash";
+
+
 
 export interface Movie {
   id: number;
@@ -22,32 +25,84 @@ interface AppState {
   isLoading: boolean;
   error: boolean;
   isOnline: boolean;
+  currentPage: number;
+  searchQuery: string;
+  totalResults: number;
 }
 
 export default class App extends Component<AppProps, AppState> {
+  mdbapiService = new MdbapiService();
+
   state: AppState = {
     movies: [],
     isLoading: false,
     error: false,
     isOnline: window.navigator.onLine,
+    currentPage: 1,
+    searchQuery: "return",
+    totalResults: 0,
   };
 
   componentDidMount() {
-    getMovies().then((movies) => {
-      this.setState({ movies });
-    });
+    const defaultQuery = "return";
+    this.mdbapiService
+        .getMovies(defaultQuery, 1)
+        .then((response: { movies: Movie[], total_results: number }) => {
+          this.setState({
+            movies: response.movies,
+            totalResults: response.total_results,
+            searchQuery: defaultQuery // Обновите searchQuery в состоянии
+          });
+        });
 
     window.addEventListener("online", this.updateOnlineStatus);
     window.addEventListener("offline", this.updateOnlineStatus);
-  };
+  }
 
   componentWillUnmount() {
-    window.removeEventListener('online', this.updateOnlineStatus);
-    window.removeEventListener('offline', this.updateOnlineStatus);
+    window.removeEventListener("online", this.updateOnlineStatus);
+    window.removeEventListener("offline", this.updateOnlineStatus);
   }
 
   updateOnlineStatus = () => {
     this.setState({ isOnline: window.navigator.onLine });
+  };
+
+  handleSearch = debounce(async (text: string, page: number = 1) => {
+    try {
+      this.setState({ isLoading: true, searchQuery: text, currentPage: 1 });
+      const response = await this.mdbapiService.getMovies(text, page);
+      console.log(`Response: ${JSON.stringify(response, null, 2)}`);
+      this.setState({
+        movies: response.movies,
+        totalResults: response.total_results,
+        isLoading: false,
+        error: false,
+      });
+      console.log(`TR2: ${response.total_results}`)
+    } catch (error) {
+      this.setState({ error: true, isLoading: false });
+    }
+  }, 1500);
+
+  handlePageChange = async (page: number) => {
+    const { searchQuery } = this.state;
+    const defaultQuery = "return";
+    const query = searchQuery || defaultQuery;
+    this.setState({ currentPage: page });
+
+    try {
+      this.setState({ isLoading: true });
+      const response = await this.mdbapiService.getMovies(query, page);
+      this.setState({
+        movies: response.movies,
+        totalResults: response.total_results,
+        isLoading: false,
+        error: false
+      });
+    } catch (error) {
+      this.setState({ error: true, isLoading: false });
+    }
   };
 
   render() {
@@ -70,12 +125,16 @@ export default class App extends Component<AppProps, AppState> {
               <Tabs />
             </header>
             <section className="main">
-              <MovieSearch />
+              <MovieSearch handleSearch={this.handleSearch} />
               {spinElement}
               {noResultsMessage}
               <MovieList movies={this.state.movies} error={this.state.error} />
             </section>
-            <Pagination />
+            <Paginations
+              currentPage={this.state.currentPage}
+              handlePageChange={this.handlePageChange}
+              totalResult={this.state.totalResults}
+            />
           </section>
         ) : (
           <div>
