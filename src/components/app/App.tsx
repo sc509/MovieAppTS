@@ -28,6 +28,7 @@ interface AppState {
   currentPage: number;
   searchQuery: string;
   totalResults: number;
+  session:string;
 }
 
 export default class App extends Component<AppProps, AppState> {
@@ -41,6 +42,7 @@ export default class App extends Component<AppProps, AppState> {
     currentPage: 1,
     searchQuery: "return",
     totalResults: 0,
+    session:'',
   };
 
   componentDidMount() {
@@ -51,9 +53,24 @@ export default class App extends Component<AppProps, AppState> {
           this.setState({
             movies: response.movies,
             totalResults: response.total_results,
-            searchQuery: defaultQuery // Обновите searchQuery в состоянии
+            searchQuery: defaultQuery
           });
         });
+
+    const storedSession = localStorage.getItem('guestSession');
+    if (storedSession) {
+      this.setState({ session: storedSession });
+    } else {
+      this.mdbapiService
+          .getGuestSession()
+          .then((sessionData) => {
+            this.setState({ session: sessionData.guest_session_id });
+            localStorage.setItem('guestSession', sessionData.guest_session_id);
+          })
+          .catch((error) => {
+            console.error(`Error creating guest session: ${error}`);
+          });
+    }
 
     window.addEventListener("online", this.updateOnlineStatus);
     window.addEventListener("offline", this.updateOnlineStatus);
@@ -106,7 +123,7 @@ export default class App extends Component<AppProps, AppState> {
   };
 
   render() {
-    const { isLoading, error, movies, isOnline } = this.state;
+    const { isLoading, error, movies, isOnline,  } = this.state;
     const spinElement = isLoading ? (
       <div className="spinner-container">
         <Spin size="large" />
@@ -116,7 +133,6 @@ export default class App extends Component<AppProps, AppState> {
       !isLoading && !error && movies.length === 0 ? (
         <div className="no-results-message">Ничего не найдено</div>
       ) : null;
-
     return (
       <div>
         {isOnline ? (

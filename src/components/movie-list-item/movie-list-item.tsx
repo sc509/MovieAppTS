@@ -3,6 +3,7 @@ import './movie-list-item.scss'
 import {Movie} from "../app/App";
 import truncateString from "../../Utilities/truncate-string";
 import { format, parseISO } from 'date-fns';
+import { Rate } from 'antd';
 
 interface MovieListItemProps {
   movie:Movie;
@@ -40,7 +41,9 @@ export default class MovieListItem extends Component<MovieListItemProps, State> 
             </button>
           </div>
           <p className="movie-list__item-description">{truncateString(movie.overview, 170)}</p>
-          <div className="movie-list__item-user-rate"></div>
+          <div className="movie-list__item-user-rate">
+            <Rate className="rateStyle" value={0} count={10} />
+          </div>
         </div>
       </div>
     );
