@@ -95,8 +95,8 @@ export default class MdbapiService {
     }
   }
 
-  public async getRatedMovies(guestSessionId: string) {
-    const url = `https://api.themoviedb.org/3/guest_session/${guestSessionId}/rated_movies?api_key=6d2b0c95d8f848f05aebfbf9b5486775`;
+  public async getRatedMovies(guestSessionId: string, page: number = 1) {
+    const url = `https://api.themoviedb.org/3/guest_session/${guestSessionId}/rated_movies?api_key=6d2b0c95d8f848f05aebfbf9b5486775&page=${page}`;
 
     const optionsWithoutAuth = {
       method: "GET",
@@ -111,10 +111,31 @@ export default class MdbapiService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      return data.results;
+      return {
+        movies: data.results,
+        total_results: data.total_results,
+      };
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`Error getting rated movies: ${error.message}`);
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  public async getGenres() {
+    const url = new URL("https://api.themoviedb.org/3/genre/movie/list");
+    try {
+      const response = await fetch(url.toString(), this.options);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data.genres;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Error getting genres: ${error.message}`);
       } else {
         throw error;
       }

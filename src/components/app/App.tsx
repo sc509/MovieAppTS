@@ -7,8 +7,7 @@ import MdbapiService from "../../services/service-api";
 import MovieList from "../movie-list/movie-list";
 import { Spin } from "antd";
 import { debounce } from "lodash";
-
-
+import { GenresProvider } from "../genres-context/genres-context";
 
 export interface Movie {
   id: number;
@@ -16,7 +15,9 @@ export interface Movie {
   release_date: number;
   title: string;
   poster_path: string;
-  rating? : number;
+  rating?: number;
+  vote_average: number;
+  genre_ids: number[];
 }
 
 interface AppProps {}
@@ -27,9 +28,12 @@ interface AppState {
   error: boolean;
   isOnline: boolean;
   currentPage: number;
+  currentPageRated: number;
   searchQuery: string;
   totalResults: number;
-  session:string;
+  totalResultsRated: number;
+  session: string;
+  activeTab: string;
 }
 
 export default class App extends Component<AppProps, AppState> {
@@ -41,40 +45,43 @@ export default class App extends Component<AppProps, AppState> {
     error: false,
     isOnline: window.navigator.onLine,
     currentPage: 1,
+    currentPageRated: 1,
     searchQuery: "return",
     totalResults: 0,
-    session:'',
+    session: "",
+    activeTab: "search",
+    totalResultsRated: 0,
   };
 
   componentDidMount() {
     const defaultQuery = "return";
     this.mdbapiService
-        .getMovies(defaultQuery, 1)
-        .then((response: { movies: Movie[], total_results: number }) => {
-          this.setState({
-            movies: response.movies,
-            totalResults: response.total_results,
-            searchQuery: defaultQuery
-          });
+      .getMovies(defaultQuery, 1)
+      .then((response: { movies: Movie[]; total_results: number }) => {
+        this.setState({
+          movies: response.movies,
+          totalResults: response.total_results,
+          searchQuery: defaultQuery,
         });
+      });
 
-    const storedSession = localStorage.getItem('guestSession');
+    const storedSession = localStorage.getItem("guestSession");
     if (storedSession) {
       this.setState({ session: storedSession }, () => {
         this.fetchRatedMovies();
       });
     } else {
       this.mdbapiService
-          .getGuestSession()
-          .then((sessionData) => {
-            this.setState({ session: sessionData.guest_session_id }, () => {
-              localStorage.setItem('guestSession', sessionData.guest_session_id);
-              this.fetchRatedMovies();
-            });
-          })
-          .catch((error) => {
-            console.error(`Error creating guest session: ${error}`);
+        .getGuestSession()
+        .then((sessionData) => {
+          this.setState({ session: sessionData.guest_session_id }, () => {
+            localStorage.setItem("guestSession", sessionData.guest_session_id);
+            this.fetchRatedMovies();
           });
+        })
+        .catch((error) => {
+          console.error(`Error creating guest session: ${error}`);
+        });
     }
 
     window.addEventListener("online", this.updateOnlineStatus);
@@ -122,7 +129,25 @@ export default class App extends Component<AppProps, AppState> {
         movies: response.movies,
         totalResults: response.total_results,
         isLoading: false,
-        error: false
+        error: false,
+      });
+    } catch (error) {
+      this.setState({ error: true, isLoading: false });
+    }
+  };
+
+  handlePageChangeRated = async (page: number) => {
+    try {
+      this.setState({ isLoading: true, currentPageRated: page });
+      const response = await this.mdbapiService.getRatedMovies(
+        this.state.session,
+        page,
+      );
+      this.setState({
+        movies: response.movies,
+        totalResultsRated: response.total_results,
+        isLoading: false,
+        error: false,
       });
     } catch (error) {
       this.setState({ error: true, isLoading: false });
@@ -132,7 +157,7 @@ export default class App extends Component<AppProps, AppState> {
   handleRating = async (movieId: number, rating: number) => {
     try {
       await this.mdbapiService.rateMovie(movieId, this.state.session, rating);
-      const updatedMovies = this.state.movies.map(movie => {
+      const updatedMovies = this.state.movies.map((movie) => {
         if (movie.id === movieId) {
           return { ...movie, rating };
         }
@@ -146,21 +171,63 @@ export default class App extends Component<AppProps, AppState> {
 
   fetchRatedMovies() {
     this.mdbapiService
-        .getRatedMovies(this.state.session)
-        .then((ratedMovies) => {
-          const updatedMovies = this.state.movies.map(movie => {
-            const ratingInfo = ratedMovies.find((ratedMovie: Movie) => ratedMovie.id === movie.id);
-            return { ...movie, rating: ratingInfo ? ratingInfo.rating : null };
+      .getRatedMovies(this.state.session)
+      .then((response) => {
+        const ratedMovies = response.movies;
+        const updatedMovies = this.state.movies.map((movie) => {
+          const ratingInfo = ratedMovies.find(
+            (ratedMovie: Movie) => ratedMovie.id === movie.id,
+          );
+          return { ...movie, rating: ratingInfo ? ratingInfo.rating : null };
+        });
+        this.setState({ movies: updatedMovies });
+      })
+      .catch((error) => {
+        console.error(`Error fetching rated movies: ${error}`);
+      });
+  }
+
+  handleTabSearch = async (tab: string) => {
+    if (tab === "search") {
+      const { searchQuery } = this.state;
+      this.setState({
+        activeTab: tab,
+        currentPage: 1,
+        movies: [],
+      });
+      try {
+        this.setState({ isLoading: true });
+        const response = await this.mdbapiService.getMovies(searchQuery, 1);
+        this.setState({
+          movies: response.movies,
+          isLoading: false,
+          error: false,
+        });
+        this.fetchRatedMovies();
+      } catch (error) {
+        this.setState({ error: true, isLoading: false });
+      }
+    } else if (tab === "rated") {
+      this.setState({ activeTab: tab, currentPageRated: 1, isLoading: true });
+
+      this.mdbapiService
+        .getRatedMovies(this.state.session, 1)
+        .then((response) => {
+          this.setState({
+            movies: response.movies,
+            totalResultsRated: response.total_results,
+            isLoading: false,
           });
-          this.setState({ movies: updatedMovies });
         })
         .catch((error) => {
           console.error(`Error fetching rated movies: ${error}`);
+          this.setState({ error: true, isLoading: false });
         });
-  }
+    }
+  };
 
   render() {
-    const { isLoading, error, movies, isOnline,  } = this.state;
+    const { isLoading, error, movies, isOnline, activeTab } = this.state;
     const spinElement = isLoading ? (
       <div className="spinner-container">
         <Spin size="large" />
@@ -170,23 +237,44 @@ export default class App extends Component<AppProps, AppState> {
       !isLoading && !error && movies.length === 0 ? (
         <div className="no-results-message">Ничего не найдено</div>
       ) : null;
+
     return (
       <div>
         {isOnline ? (
           <section className="movieapp">
             <header className="header">
-              <Tabs />
+              <Tabs activeTab={activeTab} onTabChange={this.handleTabSearch} />
             </header>
             <section className="main">
-              <MovieSearch handleSearch={this.handleSearch} />
+              {activeTab === "search" && (
+                <MovieSearch handleSearch={this.handleSearch} />
+              )}
               {spinElement}
               {noResultsMessage}
-              <MovieList movies={this.state.movies} error={this.state.error} handleRating={this.handleRating} />
+              <GenresProvider>
+                <MovieList
+                  movies={movies}
+                  error={error}
+                  handleRating={this.handleRating}
+                />
+              </GenresProvider>
             </section>
             <Paginations
-              currentPage={this.state.currentPage}
-              handlePageChange={this.handlePageChange}
-              totalResult={this.state.totalResults}
+              currentPage={
+                activeTab === "search"
+                  ? this.state.currentPage
+                  : this.state.currentPageRated
+              }
+              handlePageChange={
+                activeTab === "search"
+                  ? this.handlePageChange
+                  : this.handlePageChangeRated
+              }
+              totalResult={
+                activeTab === "search"
+                  ? this.state.totalResults
+                  : this.state.totalResultsRated
+              }
             />
           </section>
         ) : (
