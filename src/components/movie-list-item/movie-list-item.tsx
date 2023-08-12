@@ -4,6 +4,7 @@ import { Movie } from "../../interface/interface";
 import truncateString from "../../Utilities/truncate-string";
 import { format, parseISO } from "date-fns";
 import { Rate } from "antd";
+import { toast } from 'react-toastify';
 
 interface MovieListItemProps {
   movie: Movie;
@@ -19,8 +20,11 @@ export default class MovieListItem extends Component<
 > {
   handleImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
     const target = event.target as HTMLImageElement;
+
+    toast.error('Ошибка загрузки изображения, будет использовано запасное.');
+
     target.src =
-      "https://skomarket.ru/upload/iblock/349/fzk93483k2g5hmxa3mho61h94vlpxklq.jpg";
+        "https://skomarket.ru/upload/iblock/349/fzk93483k2g5hmxa3mho61h94vlpxklq.jpg";
   };
 
   handleRate = (rating: number) => {

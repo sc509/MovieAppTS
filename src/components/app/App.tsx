@@ -8,7 +8,8 @@ import { Spin } from "antd";
 import { debounce } from "lodash";
 import { GenresProvider } from "../genres-context/genres-context";
 import { Movie } from "../../interface/interface";
-
+import { toast , ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import "./App.scss";
 interface AppProps {}
 
@@ -46,14 +47,17 @@ export default class App extends Component<AppProps, AppState> {
   componentDidMount() {
     const defaultQuery = "return";
     this.mdbapiService
-      .getMovies(defaultQuery, 1)
-      .then((response: { movies: Movie[]; total_results: number }) => {
-        this.setState({
-          movies: response.movies,
-          totalResults: response.total_results,
-          searchQuery: defaultQuery,
+        .getMovies(defaultQuery, 1)
+        .then((response: { movies: Movie[]; total_results: number }) => {
+          this.setState({
+            movies: response.movies,
+            totalResults: response.total_results,
+            searchQuery: defaultQuery,
+          });
+        })
+        .catch((error) => {
+          toast.error(`Error fetching movies: ${error.message}`);
         });
-      });
 
     const storedSession = localStorage.getItem("guestSession");
     if (storedSession) {
@@ -62,16 +66,16 @@ export default class App extends Component<AppProps, AppState> {
       });
     } else {
       this.mdbapiService
-        .getGuestSession()
-        .then((sessionData) => {
-          this.setState({ session: sessionData.guest_session_id }, () => {
-            localStorage.setItem("guestSession", sessionData.guest_session_id);
-            this.fetchRatedMovies();
+          .getGuestSession()
+          .then((sessionData) => {
+            this.setState({ session: sessionData.guest_session_id }, () => {
+              localStorage.setItem("guestSession", sessionData.guest_session_id);
+              this.fetchRatedMovies();
+            });
+          })
+          .catch((error) => {
+            toast.error(`Error creating guest session: ${error.message}`);
           });
-        })
-        .catch((error) => {
-          console.error(`Error creating guest session: ${error}`);
-        });
     }
 
     window.addEventListener("online", this.updateOnlineStatus);
@@ -102,7 +106,8 @@ export default class App extends Component<AppProps, AppState> {
       await this.mdbapiService.getRatedMovies(session);
       this.fetchRatedMovies();
     } catch (error) {
-      this.setState({ error: true, isLoading: false });
+      this.setState({ isLoading: false });
+      toast.error(`Error: ${(error as Error).message}`);
     }
   }, 1500);
 
@@ -122,7 +127,8 @@ export default class App extends Component<AppProps, AppState> {
         error: false,
       });
     } catch (error) {
-      this.setState({ error: true, isLoading: false });
+      this.setState({ isLoading: false });
+      toast.error(`Error: ${(error as Error).message}`);
     }
   };
 
@@ -130,8 +136,8 @@ export default class App extends Component<AppProps, AppState> {
     try {
       this.setState({ isLoading: true, currentPageRated: page });
       const response = await this.mdbapiService.getRatedMovies(
-        this.state.session,
-        page,
+          this.state.session,
+          page,
       );
       this.setState({
         movies: response.movies,
@@ -140,7 +146,8 @@ export default class App extends Component<AppProps, AppState> {
         error: false,
       });
     } catch (error) {
-      this.setState({ error: true, isLoading: false });
+      this.setState({ isLoading: false });
+      toast.error(`Error: ${(error as Error).message}`);
     }
   };
 
@@ -155,26 +162,26 @@ export default class App extends Component<AppProps, AppState> {
       });
       this.setState({ movies: updatedMovies });
     } catch (error) {
-      console.error(`Error rating movie: ${error}`);
+      toast.error(`Error: ${(error as Error).message}`);
     }
   };
 
   fetchRatedMovies() {
     this.mdbapiService
-      .getRatedMovies(this.state.session)
-      .then((response) => {
-        const ratedMovies = response.movies;
-        const updatedMovies = this.state.movies.map((movie) => {
-          const ratingInfo = ratedMovies.find(
-            (ratedMovie: Movie) => ratedMovie.id === movie.id,
-          );
-          return { ...movie, rating: ratingInfo ? ratingInfo.rating : null };
+        .getRatedMovies(this.state.session)
+        .then((response) => {
+          const ratedMovies = response.movies;
+          const updatedMovies = this.state.movies.map((movie) => {
+            const ratingInfo = ratedMovies.find(
+                (ratedMovie: Movie) => ratedMovie.id === movie.id,
+            );
+            return { ...movie, rating: ratingInfo ? ratingInfo.rating : null };
+          });
+          this.setState({ movies: updatedMovies });
+        })
+        .catch((error) => {
+          toast.error(`Error: ${(error as Error).message}`);
         });
-        this.setState({ movies: updatedMovies });
-      })
-      .catch((error) => {
-        console.error(`Error fetching rated movies: ${error}`);
-      });
   }
 
   handleTabSearch = async (tab: string) => {
@@ -195,26 +202,28 @@ export default class App extends Component<AppProps, AppState> {
         });
         this.fetchRatedMovies();
       } catch (error) {
-        this.setState({ error: true, isLoading: false });
+        this.setState({ isLoading: false });
+        toast.error(`Error: ${(error as Error).message}`);
       }
     } else if (tab === "rated") {
       this.setState({ activeTab: tab, currentPageRated: 1, isLoading: true });
 
       this.mdbapiService
-        .getRatedMovies(this.state.session, 1)
-        .then((response) => {
-          this.setState({
-            movies: response.movies,
-            totalResultsRated: response.total_results,
-            isLoading: false,
+          .getRatedMovies(this.state.session, 1)
+          .then((response) => {
+            this.setState({
+              movies: response.movies,
+              totalResultsRated: response.total_results,
+              isLoading: false,
+            });
+          })
+          .catch((error) => {
+            this.setState({ isLoading: false });
+            toast.error(`Error: ${(error as Error).message}`);
           });
-        })
-        .catch((error) => {
-          console.error(`Error fetching rated movies: ${error}`);
-          this.setState({ error: true, isLoading: false });
-        });
     }
   };
+
 
   render() {
     const { isLoading, error, movies, isOnline, activeTab } = this.state;
@@ -232,6 +241,7 @@ export default class App extends Component<AppProps, AppState> {
       <div>
         {isOnline ? (
           <section className="movieapp">
+            <ToastContainer />
             <header className="header">
               <Tabs activeTab={activeTab} onTabChange={this.handleTabSearch} />
             </header>
