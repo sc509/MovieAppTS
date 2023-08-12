@@ -1,4 +1,3 @@
-import "./App.scss";
 import { Component } from "react";
 import MovieSearch from "../movie-search/movie-search";
 import Tabs from "../tabs/tabs";
@@ -8,18 +7,9 @@ import MovieList from "../movie-list/movie-list";
 import { Spin } from "antd";
 import { debounce } from "lodash";
 import { GenresProvider } from "../genres-context/genres-context";
+import { Movie } from "../../interface/interface";
 
-export interface Movie {
-  id: number;
-  overview: string;
-  release_date: number;
-  title: string;
-  poster_path: string;
-  rating?: number;
-  vote_average: number;
-  genre_ids: number[];
-}
-
+import "./App.scss";
 interface AppProps {}
 
 interface AppState {

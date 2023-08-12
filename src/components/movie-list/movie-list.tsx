@@ -1,7 +1,7 @@
 import { Component } from "react";
 import "./movie-list.scss";
 import MovieListItem from "../movie-list-item/movie-list-item";
-import { Movie } from "../app/App";
+import { Movie } from "../../interface/interface";
 import ErrorIndication from "../error-indication/error-indication";
 import { GenresConsumer } from "../genres-context/genres-context";
 

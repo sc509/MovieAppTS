@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import "./movie-list-item.scss";
-import { Movie } from "../app/App";
+import { Movie } from "../../interface/interface";
 import truncateString from "../../Utilities/truncate-string";
 import { format, parseISO } from "date-fns";
 import { Rate } from "antd";
@@ -67,15 +67,18 @@ export default class MovieListItem extends Component<
           </div>
           <p className="movie-list__item-date">{formattedDate}</p>
           <div className="movie-list__item-genres">
-            {movieGenres.map((genre: string, index: number) => (
-              <button
-                key={index}
-                type="button"
-                className="movie-list__item-button"
-              >
-                {genre}
-              </button>
-            ))}
+            {movieGenres.map((genre: string) => {
+              const key = `${movie.id}-${genre}-${movie.title}`;
+              return (
+                  <button
+                      key={key}
+                      type="button"
+                      className="movie-list__item-button"
+                  >
+                    {genre}
+                  </button>
+              );
+            })}
           </div>
           <p className="movie-list__item-description">
             {truncateString(movie.overview, 170)}

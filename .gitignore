@@ -24,3 +24,4 @@ yarn-error.log*
 
 # JetBrains IDE
 .idea
+.vercel

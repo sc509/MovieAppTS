@@ -1,24 +1,6 @@
 import React, { Component, ReactNode } from 'react';
 import MdbapiService from '../../services/service-api';
-
-interface Genre {
-    id: number;
-    name: string;
-}
-
-interface GenresState {
-    genres: Record<number, string>;
-    error: string | null;
-    value: {
-        genres: Record<number, string>;
-        error: string | null;
-    } | null;
-}
-
-interface GenresContextValue {
-    genres: Record<number, string>;
-    error: string | null;
-}
+import {Genre, GenresState, GenresContextValue} from '../../interface/interface'
 
 interface GenresProviderProps {
     children: ReactNode;
