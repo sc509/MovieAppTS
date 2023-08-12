@@ -1,4 +1,8 @@
 export default class MdbapiService {
+  private baseURL = 'https://api.themoviedb.org/3';
+
+  private apiKey = '6d2b0c95d8f848f05aebfbf9b5486775';
+
   private options = {
     method: "GET",
     headers: {
@@ -17,7 +21,7 @@ export default class MdbapiService {
       throw new Error("Фильмы не найдены");
     }
 
-    const url = new URL(`https://api.themoviedb.org/3/search/movie`);
+    const url = new URL(`${this.baseURL}/search/movie`);
     url.search = new URLSearchParams({
       language: "en-US",
       query,
@@ -44,9 +48,7 @@ export default class MdbapiService {
   }
 
   public async getGuestSession() {
-    const url = new URL(
-      `https://api.themoviedb.org/3/authentication/guest_session/new`,
-    );
+    const url = new URL(`${this.baseURL}/authentication/guest_session/new`);
 
     try {
       const response = await this.fetchWithAuthorization(url);
@@ -69,7 +71,11 @@ export default class MdbapiService {
     guestSessionId: string,
     rating: number,
   ) {
-    const url = `https://api.themoviedb.org/3/movie/${movieId}/rating?api_key=6d2b0c95d8f848f05aebfbf9b5486775&guest_session_id=${guestSessionId}`;
+    const url = new URL(`${this.baseURL}/movie/${movieId}/rating`);
+    url.search = new URLSearchParams({
+      api_key: this.apiKey,
+      guest_session_id: guestSessionId
+    }).toString();
 
     const options = {
       method: "POST",
@@ -96,7 +102,11 @@ export default class MdbapiService {
   }
 
   public async getRatedMovies(guestSessionId: string, page: number = 1) {
-    const url = `https://api.themoviedb.org/3/guest_session/${guestSessionId}/rated_movies?api_key=6d2b0c95d8f848f05aebfbf9b5486775&page=${page}`;
+    const url = new URL(`${this.baseURL}/guest_session/${guestSessionId}/rated_movies`);
+    url.search = new URLSearchParams({
+      api_key: this.apiKey,
+      page: page.toString()
+    }).toString();
 
     const optionsWithoutAuth = {
       method: "GET",
@@ -125,7 +135,7 @@ export default class MdbapiService {
   }
 
   public async getGenres() {
-    const url = new URL("https://api.themoviedb.org/3/genre/movie/list");
+    const url = new URL(`${this.baseURL}/genre/movie/list`);
     try {
       const response = await fetch(url.toString(), this.options);
       if (!response.ok) {
